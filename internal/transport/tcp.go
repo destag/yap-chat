@@ -52,6 +52,10 @@ func (t *TCPTransport) Write(ctx context.Context, packet protocol.Packet) error 
 	return t.writer.Flush()
 }
 
+func (t *TCPTransport) Close() error {
+	return t.conn.Close()
+}
+
 func (t *TCPTransport) setDeadline(ctx context.Context) error {
 	deadline, ok := ctx.Deadline()
 
