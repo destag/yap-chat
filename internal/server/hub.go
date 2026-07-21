@@ -1,6 +1,10 @@
 package server
 
-import "github.com/destag/yap-chat/internal/protocol"
+import (
+	"fmt"
+
+	"github.com/destag/yap-chat/internal/protocol"
+)
 
 type HubEvent struct {
 	Client *Client
@@ -29,10 +33,10 @@ func (h *Hub) Run() {
 		select {
 
 		case client := <-h.register:
-			h.clients[client] = true
+			h.addClient(client)
 
 		case client := <-h.unregister:
-			delete(h.clients, client)
+			h.removeClient(client)
 
 		case event := <-h.events:
 			h.handleEvent(event)
@@ -56,6 +60,30 @@ func (h *Hub) handleEvent(event HubEvent) {
 
 func (h *Hub) broadcast(packet protocol.Packet) {
 	for client := range h.clients {
-		client.Send(packet)
+		if err := client.Send(packet); err != nil {
+			h.removeClient(client)
+		}
 	}
+}
+
+func (h *Hub) addClient(client *Client) {
+	h.clients[client] = true
+
+	fmt.Printf(
+		"client connected (%d total)\n",
+		len(h.clients),
+	)
+}
+
+func (h *Hub) removeClient(client *Client) {
+	if _, ok := h.clients[client]; !ok {
+		return
+	}
+
+	delete(h.clients, client)
+
+	fmt.Printf(
+		"client disconnected (%d remaining)\n",
+		len(h.clients),
+	)
 }
