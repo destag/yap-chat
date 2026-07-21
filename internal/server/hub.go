@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/destag/yap-chat/internal/protocol"
@@ -51,7 +52,7 @@ func (h *Hub) handleEvent(event HubEvent) {
 		h.broadcast(event.Packet)
 
 	case protocol.TypeLogin:
-	//
+		h.handleLogin(event)
 
 	default:
 		// unknown packet
@@ -86,4 +87,57 @@ func (h *Hub) removeClient(client *Client) {
 		"client disconnected (%d remaining)\n",
 		len(h.clients),
 	)
+
+	if client.username != "" {
+		h.broadcastMessage(
+			fmt.Sprintf("%s left the chat", client.username),
+		)
+	}
+}
+
+func (h *Hub) handleLogin(event HubEvent) {
+	if event.Client.username != "" {
+		return
+	}
+
+	var login protocol.Login
+
+	err := json.Unmarshal(event.Packet.Data, &login)
+	if err != nil {
+		return
+	}
+
+	if login.Username == "" {
+		return
+	}
+
+	if h.usernameTaken(login.Username) {
+		// TODO: send error to client
+		return
+	}
+
+	event.Client.username = login.Username
+
+	h.broadcastMessage(
+		fmt.Sprintf("%s joined the chat", login.Username),
+	)
+}
+
+func (h *Hub) usernameTaken(username string) bool {
+	for client := range h.clients {
+		if client.username == username {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (h *Hub) broadcastMessage(text string) {
+	packet, err := protocol.New(protocol.Message{Text: text})
+	if err != nil {
+		return
+	}
+
+	h.broadcast(packet)
 }

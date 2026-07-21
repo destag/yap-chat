@@ -1,5 +1,9 @@
 package protocol
 
+type Payload interface {
+	Type() string
+}
+
 type Login struct {
 	Username string `json:"username"`
 }

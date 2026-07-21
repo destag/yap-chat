@@ -19,6 +19,18 @@ type Packet struct {
 	Data json.RawMessage `json:"data"`
 }
 
+func New(payload Payload) (Packet, error) {
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return Packet{}, err
+	}
+
+	return Packet{
+		Type: payload.Type(),
+		Data: data,
+	}, nil
+}
+
 func Encode(packet Packet) ([]byte, error) {
 	return json.Marshal(packet)
 }
