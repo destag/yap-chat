@@ -18,7 +18,7 @@ func main() {
 	)
 	defer stop()
 
-	s := server.New(":8080")
+	s := server.New(":9000")
 
 	if err := s.ListenAndServe(ctx); err != nil {
 		log.Fatal(err)
