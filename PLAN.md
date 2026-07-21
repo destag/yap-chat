@@ -286,11 +286,11 @@ Not stored:
 - [ ] Add protocol tests
 
 ## Phase 3 - Transport
-- [ ] Create transport interface
-- [ ] Implement TCP transport
-- [ ] Implement read loop
-- [ ] Implement write loop
-- [ ] Add connection handling
+- [x] Create transport interface
+- [x] Implement TCP transport
+- [x] Implement read loop
+- [x] Implement write loop
+- [x] Add connection handling
 
 ## Phase 4 - Server
 - [ ] Create TCP listener
