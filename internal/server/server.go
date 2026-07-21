@@ -9,15 +9,19 @@ import (
 
 type Server struct {
 	addr string
+	hub  *Hub
 }
 
 func New(addr string) *Server {
 	return &Server{
 		addr: addr,
+		hub:  NewHub(),
 	}
 }
 
 func (s *Server) ListenAndServe(ctx context.Context) error {
+	go s.hub.Run()
+
 	listener, err := net.Listen("tcp", s.addr)
 	if err != nil {
 		return err
@@ -48,7 +52,6 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 func (s *Server) handleConnection(conn net.Conn) {
 	t := transport.NewTCPTransport(conn)
 
-	client := NewClient(t)
-
+	client := NewClient(t, s.hub)
 	client.Start()
 }

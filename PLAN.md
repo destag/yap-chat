@@ -293,8 +293,8 @@ Not stored:
 - [x] Add connection handling
 
 ## Phase 4 - Server
-- [ ] Create TCP listener
-- [ ] Create Hub
+- [x] Create TCP listener
+- [x] Create Hub
 - [ ] Implement client registration
 - [ ] Implement client removal
 - [ ] Implement broadcasting

@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 
 	"github.com/destag/yap-chat/internal/protocol"
@@ -12,30 +11,34 @@ import (
 
 type Client struct {
 	transport transport.Transport
+	hub       *Hub
+
 	outgoing  chan protocol.Packet
 	done      chan struct{}
 	closeOnce sync.Once
 
 	username string
-
-	// hub *Hub
 }
 
-func NewClient(t transport.Transport) *Client {
+func NewClient(t transport.Transport, hub *Hub) *Client {
 	return &Client{
 		transport: t,
+		hub:       hub,
 		outgoing:  make(chan protocol.Packet),
 		done:      make(chan struct{}),
 	}
 }
 
 func (c *Client) Start() {
+	c.hub.register <- c
+
 	go c.readLoop()
 	go c.writeLoop()
 }
 
 func (c *Client) Close() {
 	c.closeOnce.Do(func() {
+		c.hub.unregister <- c
 		close(c.done)
 		c.transport.Close()
 		close(c.outgoing)
@@ -87,12 +90,16 @@ func (c *Client) readLoop() {
 			return
 		}
 
-		c.handlePacket(packet)
-	}
-}
+		select {
+		case c.hub.events <- HubEvent{
+			Client: c,
+			Packet: packet,
+		}:
 
-func (c *Client) handlePacket(packet protocol.Packet) {
-	fmt.Println(packet.Type)
+		case <-c.done:
+			return
+		}
+	}
 }
 
 func (c *Client) disconnect() {}
