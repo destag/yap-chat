@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/destag/yap-chat/internal/protocol"
@@ -25,6 +26,7 @@ func New(t transport.Transport) *Client {
 	return &Client{
 		transport: t,
 		outgoing:  make(chan protocol.Packet),
+		incoming:  make(chan protocol.Packet),
 		done:      make(chan struct{}),
 	}
 }
@@ -62,6 +64,10 @@ func (c *Client) Login(username string) error {
 	c.username = username
 
 	return c.Send(packet)
+}
+
+func (c *Client) Incoming() <-chan protocol.Packet {
+	return c.incoming
 }
 
 func (c *Client) readLoop() {
