@@ -43,18 +43,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyPressMsg:
 		switch msg.String() {
-
 		case "ctrl+c":
 			return m, tea.Quit
 
 		case "enter":
 			text := strings.TrimSpace(m.input.Value())
-
-			if text != "" {
-				m.messages = append(m.messages, "> "+text)
-
-				m.input.Reset()
+			if text == "" {
+				break
 			}
+
+			packet, err := protocol.New(protocol.Message{
+				Text: text,
+			})
+			if err == nil {
+				_ = m.client.Send(packet)
+			}
+
+			m.input.Reset()
 		}
 
 	case PacketMsg:
