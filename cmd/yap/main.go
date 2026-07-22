@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 
 	"github.com/destag/yap-chat/internal/client"
 	"github.com/destag/yap-chat/internal/transport"
@@ -24,7 +24,7 @@ func main() {
 	client.Start()
 
 	program := tea.NewProgram(
-		tui.New(client.Incoming()),
+		tui.New(client),
 	)
 
 	go func() {

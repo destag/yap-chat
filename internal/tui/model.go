@@ -2,35 +2,59 @@ package tui
 
 import (
 	"encoding/json"
+	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
 
+	"github.com/destag/yap-chat/internal/client"
 	"github.com/destag/yap-chat/internal/protocol"
 )
 
 type Model struct {
+	client   *client.Client
 	messages []string
 
-	incoming <-chan protocol.Packet
+	input textinput.Model
 }
 
-func New(incoming <-chan protocol.Packet) Model {
+func New(client *client.Client) Model {
+	input := textinput.New()
+
+	input.Placeholder = "Type a message..."
+	input.Focus()
+	input.SetWidth(50)
+
 	return Model{
+		client:   client,
 		messages: []string{},
-		incoming: incoming,
+		input:    input,
 	}
 }
 
 func (m Model) Init() tea.Cmd {
-	return waitForPacket(m.incoming)
+	return waitForPacket(m.client.Incoming())
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
+
 	switch msg := msg.(type) {
 
-	case tea.KeyMsg:
-		if msg.String() == "ctrl+c" {
+	case tea.KeyPressMsg:
+		switch msg.String() {
+
+		case "ctrl+c":
 			return m, tea.Quit
+
+		case "enter":
+			text := strings.TrimSpace(m.input.Value())
+
+			if text != "" {
+				m.messages = append(m.messages, "> "+text)
+
+				m.input.Reset()
+			}
 		}
 
 	case PacketMsg:
@@ -48,20 +72,30 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			)
 		}
 
-		return m, waitForPacket(m.incoming)
+		return m, waitForPacket(m.client.Incoming())
 	}
 
-	return m, nil
+	var cmd tea.Cmd
+	m.input, cmd = m.input.Update(msg)
+	cmds = append(cmds, cmd)
+
+	return m, tea.Batch(cmds...)
 }
 
-func (m Model) View() string {
-	result := "yap\n\n"
+func (m Model) View() tea.View {
+	var b strings.Builder
 
-	for _, message := range m.messages {
-		result += message + "\n"
+	b.WriteString("yap\n\n")
+
+	for _, msg := range m.messages {
+		b.WriteString(msg)
+		b.WriteByte('\n')
 	}
 
-	return result
+	b.WriteString("\n")
+	b.WriteString(m.input.View())
+
+	return tea.NewView(b.String())
 }
 
 func waitForPacket(ch <-chan protocol.Packet) tea.Cmd {

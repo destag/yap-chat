@@ -3,7 +3,6 @@ package client
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 
 	"github.com/destag/yap-chat/internal/protocol"
