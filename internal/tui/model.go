@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"charm.land/bubbles/v2/textinput"
+	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/destag/yap-chat/internal/client"
@@ -12,8 +13,10 @@ import (
 )
 
 type Model struct {
-	client   *client.Client
+	client *client.Client
+
 	messages []string
+	viewport viewport.Model
 
 	input textinput.Model
 }
@@ -25,9 +28,15 @@ func New(client *client.Client) Model {
 	input.Focus()
 	input.SetWidth(50)
 
+	vp := viewport.New(
+		viewport.WithWidth(80),
+		viewport.WithHeight(20),
+	)
+
 	return Model{
 		client:   client,
 		messages: []string{},
+		viewport: vp,
 		input:    input,
 	}
 }
@@ -62,6 +71,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.input.Reset()
 		}
 
+	case tea.WindowSizeMsg:
+		m.viewport.SetWidth(msg.Width)
+		m.viewport.SetHeight(msg.Height - 4)
+
 	case PacketMsg:
 		switch msg.Packet.Type {
 
@@ -84,6 +97,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			m.messages = append(m.messages, msg)
 
+			m.refreshViewport()
+
 		case protocol.TypeSystemMessage:
 			message, err := protocol.DecodePayload[protocol.SystemMessage](msg.Packet)
 			if err != nil {
@@ -101,6 +116,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			)
 
 			m.messages = append(m.messages, msg)
+
+			m.refreshViewport()
 		}
 
 		return m, waitForPacket(m.client.Incoming())
@@ -108,7 +125,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	var cmd tea.Cmd
 	m.input, cmd = m.input.Update(msg)
-	cmds = append(cmds, cmd)
+	if cmd != nil {
+		cmds = append(cmds, cmd)
+	}
+
+	m.viewport, cmd = m.viewport.Update(msg)
+	if cmd != nil {
+		cmds = append(cmds, cmd)
+	}
 
 	return m, tea.Batch(cmds...)
 }
@@ -118,15 +142,21 @@ func (m Model) View() tea.View {
 
 	b.WriteString("yap\n\n")
 
-	for _, msg := range m.messages {
-		b.WriteString(msg)
-		b.WriteByte('\n')
-	}
+	b.WriteString(m.viewport.View())
 
-	b.WriteString("\n")
+	b.WriteString("\n\n")
+
 	b.WriteString(m.input.View())
 
 	return tea.NewView(b.String())
+}
+
+func (m *Model) refreshViewport() {
+	m.viewport.SetContent(
+		strings.Join(m.messages, "\n"),
+	)
+
+	m.viewport.GotoBottom()
 }
 
 func waitForPacket(ch <-chan protocol.Packet) tea.Cmd {
