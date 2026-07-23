@@ -1,8 +1,8 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/destag/yap-chat/internal/protocol"
 )
@@ -48,8 +48,22 @@ func (h *Hub) Run() {
 func (h *Hub) handleEvent(event HubEvent) {
 	switch event.Packet.Type {
 
-	case protocol.TypeMessage:
-		h.broadcast(event.Packet)
+	case protocol.TypeSendMessage:
+		send, err := protocol.DecodePayload[protocol.SendMessage](event.Packet)
+		if err != nil {
+			return
+		}
+
+		packet, err := protocol.New(protocol.ChatMessage{
+			Author:    event.Client.username,
+			Text:      send.Text,
+			Timestamp: time.Now().UTC(),
+		})
+		if err != nil {
+			return
+		}
+
+		h.broadcast(packet)
 
 	case protocol.TypeLogin:
 		h.handleLogin(event)
@@ -100,9 +114,7 @@ func (h *Hub) handleLogin(event HubEvent) {
 		return
 	}
 
-	var login protocol.Login
-
-	err := json.Unmarshal(event.Packet.Data, &login)
+	login, err := protocol.DecodePayload[protocol.Login](event.Packet)
 	if err != nil {
 		return
 	}
@@ -134,7 +146,10 @@ func (h *Hub) usernameTaken(username string) bool {
 }
 
 func (h *Hub) broadcastMessage(text string) {
-	packet, err := protocol.New(protocol.Message{Text: text})
+	packet, err := protocol.New(protocol.SystemMessage{
+		Text:      text,
+		Timestamp: time.Now().UTC(),
+	})
 	if err != nil {
 		return
 	}

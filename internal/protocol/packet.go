@@ -2,18 +2,6 @@ package protocol
 
 import "encoding/json"
 
-const (
-	TypeLogin      = "login"
-	TypeMessage    = "message"
-	TypeHistory    = "history"
-	TypeUserJoined = "user_joined"
-	TypeUserLeft   = "user_left"
-	TypeUsers      = "users"
-	TypePing       = "ping"
-	TypePong       = "pong"
-	TypeError      = "error"
-)
-
 type Packet struct {
 	Type string          `json:"type"`
 	Data json.RawMessage `json:"data"`
@@ -41,4 +29,12 @@ func Decode(data []byte) (Packet, error) {
 	err := json.Unmarshal(data, &packet)
 
 	return packet, err
+}
+
+func DecodePayload[T any](packet Packet) (T, error) {
+	var payload T
+
+	err := json.Unmarshal(packet.Data, &payload)
+
+	return payload, err
 }

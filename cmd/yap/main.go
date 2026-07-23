@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net"
 
@@ -12,6 +13,25 @@ import (
 )
 
 func main() {
+	username := flag.String(
+		"name",
+		"",
+		"username",
+	)
+
+	flag.Parse()
+
+	if *username == "" {
+		fmt.Println("username is required")
+		return
+	}
+
+	f, err := tea.LogToFile("debug-"+*username+".log", "debug")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
 	conn, err := net.Dial("tcp", "localhost:9000")
 	if err != nil {
 		panic(err)
@@ -28,7 +48,7 @@ func main() {
 	)
 
 	go func() {
-		err := client.Login("alice")
+		err := client.Login(*username)
 		if err != nil {
 			fmt.Println(err)
 		}

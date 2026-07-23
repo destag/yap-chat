@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"errors"
+	"log"
 	"sync"
 
 	"github.com/destag/yap-chat/internal/protocol"
@@ -45,6 +46,7 @@ func (c *Client) Close() {
 func (c *Client) Send(packet protocol.Packet) error {
 	select {
 	case c.outgoing <- packet:
+		log.Printf("client queue outgoing packet: %+v", packet)
 		return nil
 
 	case <-c.done:
@@ -80,6 +82,7 @@ func (c *Client) readLoop() {
 
 		select {
 		case c.incoming <- packet:
+			log.Printf("client queue incoming packet: %+v", packet)
 
 		case <-c.done:
 			return
@@ -96,6 +99,8 @@ func (c *Client) writeLoop() {
 			if !ok {
 				return
 			}
+
+			log.Printf("writing packet: %+v", packet)
 
 			err := c.transport.Write(
 				context.Background(),

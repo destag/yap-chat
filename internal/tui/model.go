@@ -1,7 +1,7 @@
 package tui
 
 import (
-	"encoding/json"
+	"fmt"
 	"strings"
 
 	"charm.land/bubbles/v2/textinput"
@@ -52,7 +52,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				break
 			}
 
-			packet, err := protocol.New(protocol.Message{
+			packet, err := protocol.New(protocol.SendMessage{
 				Text: text,
 			})
 			if err == nil {
@@ -63,18 +63,44 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case PacketMsg:
-		var message protocol.Message
+		switch msg.Packet.Type {
 
-		err := json.Unmarshal(
-			msg.Packet.Data,
-			&message,
-		)
+		case protocol.TypeChatMessage:
+			message, err := protocol.DecodePayload[protocol.ChatMessage](msg.Packet)
+			if err != nil {
+				return m, nil
+			}
 
-		if err == nil {
-			m.messages = append(
-				m.messages,
+			timestamp := message.Timestamp.
+				Local().
+				Format("15:04")
+
+			msg := fmt.Sprintf(
+				"[%s] %s: %s",
+				timestamp,
+				message.Author,
 				message.Text,
 			)
+
+			m.messages = append(m.messages, msg)
+
+		case protocol.TypeSystemMessage:
+			message, err := protocol.DecodePayload[protocol.SystemMessage](msg.Packet)
+			if err != nil {
+				return m, nil
+			}
+
+			timestamp := message.Timestamp.
+				Local().
+				Format("15:04")
+
+			msg := fmt.Sprintf(
+				"[%s] * %s",
+				timestamp,
+				message.Text,
+			)
+
+			m.messages = append(m.messages, msg)
 		}
 
 		return m, waitForPacket(m.client.Incoming())
