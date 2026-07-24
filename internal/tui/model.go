@@ -53,76 +53,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case tea.KeyPressMsg:
-		switch msg.String() {
-		case "ctrl+c":
-			return m, quit(m.client)
-
-		case "enter":
-			text := strings.TrimSpace(m.input.Value())
-			if text == "" {
-				break
-			}
-
-			packet, err := protocol.New(protocol.SendMessage{
-				Text: text,
-			})
-			if err == nil {
-				_ = m.client.Send(packet)
-			}
-
-			m.input.Reset()
-		}
+		cmds = append(cmds, m.handleKey(msg))
 
 	case tea.WindowSizeMsg:
-		m.viewport.SetWidth(msg.Width)
-		m.viewport.SetHeight(msg.Height - 4)
+		cmds = append(cmds, m.handleResize(msg))
 
 	case PacketMsg:
-		switch msg.Packet.Type {
-
-		case protocol.TypeChatMessage:
-			message, err := protocol.DecodePayload[protocol.ChatMessage](msg.Packet)
-			if err != nil {
-				return m, nil
-			}
-
-			timestamp := message.Timestamp.
-				Local().
-				Format("15:04")
-
-			msg := fmt.Sprintf(
-				"[%s] %s: %s",
-				timestamp,
-				message.Author,
-				message.Text,
-			)
-
-			m.messages = append(m.messages, msg)
-
-			m.refreshViewport()
-
-		case protocol.TypeSystemMessage:
-			message, err := protocol.DecodePayload[protocol.SystemMessage](msg.Packet)
-			if err != nil {
-				return m, nil
-			}
-
-			timestamp := message.Timestamp.
-				Local().
-				Format("15:04")
-
-			msg := fmt.Sprintf(
-				"[%s] * %s",
-				timestamp,
-				message.Text,
-			)
-
-			m.messages = append(m.messages, msg)
-
-			m.refreshViewport()
-		}
-
-		return m, waitForPacket(m.client.Incoming())
+		cmds = append(cmds, m.handlePacket(msg))
 	}
 
 	var cmd tea.Cmd
@@ -137,6 +74,83 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, tea.Batch(cmds...)
+}
+
+func (m *Model) handleKey(msg tea.KeyPressMsg) tea.Cmd {
+	switch msg.String() {
+	case "ctrl+c":
+		return quit(m.client)
+
+	case "enter":
+		text := strings.TrimSpace(m.input.Value())
+		if text == "" {
+			break
+		}
+
+		packet, err := protocol.New(protocol.SendMessage{
+			Text: text,
+		})
+		if err == nil {
+			_ = m.client.Send(packet)
+		}
+
+		m.input.Reset()
+	}
+
+	return nil
+}
+
+func (m *Model) handlePacket(msg PacketMsg) tea.Cmd {
+	switch msg.Packet.Type {
+
+	case protocol.TypeChatMessage:
+		message, err := protocol.DecodePayload[protocol.ChatMessage](msg.Packet)
+		if err != nil {
+			return nil
+		}
+
+		timestamp := message.Timestamp.
+			Local().
+			Format("15:04")
+
+		msg := fmt.Sprintf(
+			"[%s] %s: %s",
+			timestamp,
+			message.Author,
+			message.Text,
+		)
+
+		m.messages = append(m.messages, msg)
+
+		m.refreshViewport()
+
+	case protocol.TypeSystemMessage:
+		message, err := protocol.DecodePayload[protocol.SystemMessage](msg.Packet)
+		if err != nil {
+			return nil
+		}
+
+		timestamp := message.Timestamp.
+			Local().
+			Format("15:04")
+
+		msg := fmt.Sprintf(
+			"[%s] * %s",
+			timestamp,
+			message.Text,
+		)
+
+		m.messages = append(m.messages, msg)
+
+		m.refreshViewport()
+	}
+	return waitForPacket(m.client.Incoming())
+}
+
+func (m *Model) handleResize(msg tea.WindowSizeMsg) tea.Cmd {
+	m.viewport.SetWidth(msg.Width)
+	m.viewport.SetHeight(msg.Height - 4)
+	return nil
 }
 
 func (m *Model) refreshViewport() {
