@@ -53,7 +53,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "ctrl+c":
-			return m, tea.Quit
+			return m, quit(m.client)
 
 		case "enter":
 			text := strings.TrimSpace(m.input.Value())
@@ -170,6 +170,13 @@ func waitForPacket(ch <-chan protocol.Packet) tea.Cmd {
 		return PacketMsg{
 			Packet: packet,
 		}
+	}
+}
+
+func quit(client *client.Client) tea.Cmd {
+	return func() tea.Msg {
+		client.Close()
+		return tea.Quit()
 	}
 }
 

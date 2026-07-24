@@ -86,7 +86,7 @@ func (c *Client) readLoop() {
 	for {
 		packet, err := c.transport.Read(context.Background())
 		if err != nil {
-			c.disconnect()
+			c.Close()
 			return
 		}
 
@@ -101,5 +101,3 @@ func (c *Client) readLoop() {
 		}
 	}
 }
-
-func (c *Client) disconnect() {}
