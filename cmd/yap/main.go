@@ -19,6 +19,12 @@ func main() {
 		"username",
 	)
 
+	addr := flag.String(
+		"server",
+		"localhost:9000",
+		"server address",
+	)
+
 	flag.Parse()
 
 	if *username == "" {
@@ -32,7 +38,7 @@ func main() {
 	}
 	defer f.Close()
 
-	conn, err := net.Dial("tcp", "localhost:9000")
+	conn, err := net.Dial("tcp", *addr)
 	if err != nil {
 		panic(err)
 	}
@@ -44,7 +50,7 @@ func main() {
 	client.Start()
 
 	program := tea.NewProgram(
-		tui.New(client),
+		tui.New(client, *addr),
 	)
 
 	go func() {

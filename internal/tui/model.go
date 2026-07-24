@@ -14,6 +14,7 @@ import (
 
 type Model struct {
 	client *client.Client
+	server string
 
 	messages []string
 	viewport viewport.Model
@@ -21,7 +22,7 @@ type Model struct {
 	input textinput.Model
 }
 
-func New(client *client.Client) Model {
+func New(client *client.Client, server string) Model {
 	input := textinput.New()
 
 	input.Placeholder = "Type a message..."
@@ -35,6 +36,7 @@ func New(client *client.Client) Model {
 
 	return Model{
 		client:   client,
+		server:   server,
 		messages: []string{},
 		viewport: vp,
 		input:    input,
@@ -135,20 +137,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, tea.Batch(cmds...)
-}
-
-func (m Model) View() tea.View {
-	var b strings.Builder
-
-	b.WriteString("yap\n\n")
-
-	b.WriteString(m.viewport.View())
-
-	b.WriteString("\n\n")
-
-	b.WriteString(m.input.View())
-
-	return tea.NewView(b.String())
 }
 
 func (m *Model) refreshViewport() {
