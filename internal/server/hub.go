@@ -68,6 +68,9 @@ func (h *Hub) handleEvent(event HubEvent) {
 	case protocol.TypeLogin:
 		h.handleLogin(event)
 
+	case protocol.TypeWhoRequest:
+		h.handleWho(event)
+
 	default:
 		// unknown packet
 	}
@@ -107,6 +110,23 @@ func (h *Hub) removeClient(client *Client) {
 			fmt.Sprintf("%s left the chat", client.username),
 		)
 	}
+}
+
+func (h *Hub) handleWho(event HubEvent) {
+	users := []string{}
+
+	for client := range h.clients {
+		users = append(users, client.username)
+	}
+
+	packet, err := protocol.New(protocol.WhoResponse{
+		Users: users,
+	})
+	if err != nil {
+		return
+	}
+
+	event.Client.Send(packet)
 }
 
 func (h *Hub) handleLogin(event HubEvent) {

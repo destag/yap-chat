@@ -42,3 +42,17 @@ type SystemMessage struct {
 func (SystemMessage) Type() string {
 	return TypeSystemMessage
 }
+
+type WhoRequest struct{}
+
+func (WhoRequest) Type() string {
+	return TypeWhoRequest
+}
+
+type WhoResponse struct {
+	Users []string `json:"users"`
+}
+
+func (WhoResponse) Type() string {
+	return TypeWhoResponse
+}

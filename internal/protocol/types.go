@@ -12,4 +12,6 @@ const (
 	TypePing          = "ping"
 	TypePong          = "pong"
 	TypeError         = "error"
+	TypeWhoRequest    = "who_request"
+	TypeWhoResponse   = "who_response"
 )

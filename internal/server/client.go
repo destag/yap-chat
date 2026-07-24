@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"log"
 	"sync"
 
 	"github.com/destag/yap-chat/internal/protocol"
@@ -66,6 +67,8 @@ func (c *Client) writeLoop() {
 				return
 			}
 
+			log.Printf("sending packet %+v\n", packet)
+
 			err := c.transport.Write(
 				context.Background(),
 				packet,
@@ -89,6 +92,8 @@ func (c *Client) readLoop() {
 			c.Close()
 			return
 		}
+
+		log.Printf("receiving packet %+v\n", packet)
 
 		select {
 		case c.hub.events <- HubEvent{

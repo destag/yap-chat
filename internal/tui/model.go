@@ -123,6 +123,17 @@ func (m *Model) quit() tea.Cmd {
 	}
 }
 
+func (m *Model) who() tea.Cmd {
+	packet, err := protocol.New(protocol.WhoRequest{})
+	if err != nil {
+		return nil
+	}
+
+	_ = m.client.Send(packet)
+
+	return nil
+}
+
 func (m *Model) handleCommand(args []string) tea.Cmd {
 	if len(args) == 0 {
 		return nil
@@ -130,10 +141,13 @@ func (m *Model) handleCommand(args []string) tea.Cmd {
 
 	switch args[0] {
 
+	case "who":
+		return m.who()
+
 	case "help":
 		m.messages = append(
 			m.messages,
-			"* Available commands: /help /quit",
+			"* Available commands: /help /quit /who",
 		)
 		m.refreshViewport()
 
@@ -173,8 +187,6 @@ func (m *Model) handlePacket(msg PacketMsg) tea.Cmd {
 
 		m.messages = append(m.messages, msg)
 
-		m.refreshViewport()
-
 	case protocol.TypeSystemMessage:
 		message, err := protocol.DecodePayload[protocol.SystemMessage](msg.Packet)
 		if err != nil {
@@ -193,8 +205,27 @@ func (m *Model) handlePacket(msg PacketMsg) tea.Cmd {
 
 		m.messages = append(m.messages, msg)
 
-		m.refreshViewport()
+	case protocol.TypeWhoResponse:
+		response, err := protocol.DecodePayload[protocol.WhoResponse](msg.Packet)
+		if err != nil {
+			return nil
+		}
+
+		m.messages = append(
+			m.messages,
+			"* Connected users:",
+		)
+
+		for _, username := range response.Users {
+			m.messages = append(
+				m.messages,
+				"  - "+username,
+			)
+		}
+
 	}
+
+	m.refreshViewport()
 	return waitForPacket(m.client.Incoming())
 }
 
