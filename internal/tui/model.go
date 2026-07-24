@@ -78,23 +78,74 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *Model) handleKey(msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
+
 	case "ctrl+c":
-		return quit(m.client)
+		return m.quit()
 
 	case "enter":
-		text := strings.TrimSpace(m.input.Value())
-		if text == "" {
-			break
-		}
+		return m.submitInput()
+	}
 
-		packet, err := protocol.New(protocol.SendMessage{
-			Text: text,
-		})
-		if err == nil {
-			_ = m.client.Send(packet)
-		}
+	return nil
+}
 
-		m.input.Reset()
+func (m *Model) submitInput() tea.Cmd {
+	text := strings.TrimSpace(m.input.Value())
+
+	if text == "" {
+		return nil
+	}
+
+	m.input.Reset()
+
+	if strings.HasPrefix(text, "/") {
+		return m.handleCommand(
+			strings.Fields(text[1:]),
+		)
+	}
+
+	packet, err := protocol.New(protocol.SendMessage{
+		Text: text,
+	})
+	if err != nil {
+		return nil
+	}
+
+	_ = m.client.Send(packet)
+
+	return nil
+}
+
+func (m *Model) quit() tea.Cmd {
+	return func() tea.Msg {
+		m.client.Close()
+		return tea.Quit()
+	}
+}
+
+func (m *Model) handleCommand(args []string) tea.Cmd {
+	if len(args) == 0 {
+		return nil
+	}
+
+	switch args[0] {
+
+	case "help":
+		m.messages = append(
+			m.messages,
+			"* Available commands: /help /quit",
+		)
+		m.refreshViewport()
+
+	case "quit":
+		return m.quit()
+
+	default:
+		m.messages = append(
+			m.messages,
+			"* Unknown command: "+args[0],
+		)
+		m.refreshViewport()
 	}
 
 	return nil
@@ -172,13 +223,6 @@ func waitForPacket(ch <-chan protocol.Packet) tea.Cmd {
 		return PacketMsg{
 			Packet: packet,
 		}
-	}
-}
-
-func quit(client *client.Client) tea.Cmd {
-	return func() tea.Msg {
-		client.Close()
-		return tea.Quit()
 	}
 }
 
