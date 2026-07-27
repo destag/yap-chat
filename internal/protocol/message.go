@@ -8,12 +8,21 @@ type Payload interface {
 	Type() string
 }
 
-type Login struct {
+type LoginRequest struct {
 	Username string `json:"username"`
 }
 
-func (Login) Type() string {
-	return TypeLogin
+func (LoginRequest) Type() string {
+	return TypeLoginRequest
+}
+
+type LoginResponse struct {
+	Success bool   `json:"success"`
+	Error   string `json:"error,omitempty"`
+}
+
+func (LoginResponse) Type() string {
+	return TypeLoginResponse
 }
 
 type SendMessage struct {

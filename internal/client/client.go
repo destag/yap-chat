@@ -55,7 +55,7 @@ func (c *Client) Send(packet protocol.Packet) error {
 }
 
 func (c *Client) Login(username string) error {
-	packet, err := protocol.New(protocol.Login{
+	packet, err := protocol.New(protocol.LoginRequest{
 		Username: username,
 	})
 	if err != nil {

@@ -65,7 +65,7 @@ func (h *Hub) handleEvent(event HubEvent) {
 
 		h.broadcast(packet)
 
-	case protocol.TypeLogin:
+	case protocol.TypeLoginRequest:
 		h.handleLogin(event)
 
 	case protocol.TypeWhoRequest:
@@ -134,21 +134,37 @@ func (h *Hub) handleLogin(event HubEvent) {
 		return
 	}
 
-	login, err := protocol.DecodePayload[protocol.Login](event.Packet)
+	login, err := protocol.DecodePayload[protocol.LoginRequest](event.Packet)
 	if err != nil {
 		return
 	}
 
 	if login.Username == "" {
+		packet, _ := protocol.New(protocol.LoginResponse{
+			Success: false,
+			Error:   "username cannot be empty",
+		})
+
+		event.Client.Send(packet)
 		return
 	}
 
 	if h.usernameTaken(login.Username) {
-		// TODO: send error to client
+		packet, _ := protocol.New(protocol.LoginResponse{
+			Success: false,
+			Error:   "username already taken",
+		})
+		event.Client.Send(packet)
+
 		return
 	}
 
 	event.Client.username = login.Username
+
+	packet, _ := protocol.New(protocol.LoginResponse{
+		Success: true,
+	})
+	event.Client.Send(packet)
 
 	h.broadcastMessage(
 		fmt.Sprintf("%s joined the chat", login.Username),

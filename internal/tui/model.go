@@ -205,6 +205,19 @@ func (m *Model) handlePacket(msg PacketMsg) tea.Cmd {
 
 		m.messages = append(m.messages, msg)
 
+	case protocol.TypeLoginResponse:
+		response, err := protocol.DecodePayload[protocol.LoginResponse](msg.Packet)
+		if err != nil {
+			return nil
+		}
+
+		if !response.Success {
+			m.messages = append(
+				m.messages,
+				"* Login failed: "+response.Error,
+			)
+		}
+
 	case protocol.TypeWhoResponse:
 		response, err := protocol.DecodePayload[protocol.WhoResponse](msg.Packet)
 		if err != nil {
