@@ -12,6 +12,7 @@ func (m Model) View() tea.View {
 			m.headerView(),
 			m.chatView(),
 			m.inputView(),
+			m.footerView(),
 		),
 	)
 
@@ -33,4 +34,8 @@ func (m Model) chatView() string {
 
 func (m Model) inputView() string {
 	return m.input.View()
+}
+
+func (m Model) footerView() string {
+	return "type /help for available commands"
 }
