@@ -49,19 +49,16 @@ func (h *Hub) handleEvent(event HubEvent) {
 	switch event.Packet.Type {
 
 	case protocol.TypeSendMessage:
-		send, err := protocol.DecodePayload[protocol.SendMessage](event.Packet)
+		send, err := protocol.Unpack[protocol.SendMessage](event.Packet)
 		if err != nil {
 			return
 		}
 
-		packet, err := protocol.New(protocol.ChatMessage{
+		packet := protocol.MustPack(protocol.ChatMessage{
 			Author:    event.Client.username,
 			Text:      send.Text,
 			Timestamp: time.Now().UTC(),
 		})
-		if err != nil {
-			return
-		}
 
 		h.broadcast(packet)
 
@@ -119,12 +116,9 @@ func (h *Hub) handleWho(event HubEvent) {
 		users = append(users, client.username)
 	}
 
-	packet, err := protocol.New(protocol.WhoResponse{
+	packet := protocol.MustPack(protocol.WhoResponse{
 		Users: users,
 	})
-	if err != nil {
-		return
-	}
 
 	event.Client.Send(packet)
 }
@@ -134,13 +128,13 @@ func (h *Hub) handleLogin(event HubEvent) {
 		return
 	}
 
-	login, err := protocol.DecodePayload[protocol.LoginRequest](event.Packet)
+	login, err := protocol.Unpack[protocol.LoginRequest](event.Packet)
 	if err != nil {
 		return
 	}
 
 	if login.Username == "" {
-		packet, _ := protocol.New(protocol.LoginResponse{
+		packet := protocol.MustPack(protocol.LoginResponse{
 			Success: false,
 			Error:   "username cannot be empty",
 		})
@@ -150,7 +144,7 @@ func (h *Hub) handleLogin(event HubEvent) {
 	}
 
 	if h.usernameTaken(login.Username) {
-		packet, _ := protocol.New(protocol.LoginResponse{
+		packet := protocol.MustPack(protocol.LoginResponse{
 			Success: false,
 			Error:   "username already taken",
 		})
@@ -161,7 +155,7 @@ func (h *Hub) handleLogin(event HubEvent) {
 
 	event.Client.username = login.Username
 
-	packet, _ := protocol.New(protocol.LoginResponse{
+	packet := protocol.MustPack(protocol.LoginResponse{
 		Success: true,
 	})
 	event.Client.Send(packet)
@@ -182,13 +176,10 @@ func (h *Hub) usernameTaken(username string) bool {
 }
 
 func (h *Hub) broadcastMessage(text string) {
-	packet, err := protocol.New(protocol.SystemMessage{
+	packet := protocol.MustPack(protocol.SystemMessage{
 		Text:      text,
 		Timestamp: time.Now().UTC(),
 	})
-	if err != nil {
-		return
-	}
 
 	h.broadcast(packet)
 }

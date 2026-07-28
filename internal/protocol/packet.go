@@ -7,7 +7,7 @@ type Packet struct {
 	Data json.RawMessage `json:"data"`
 }
 
-func New(payload Payload) (Packet, error) {
+func Pack(payload Payload) (Packet, error) {
 	data, err := json.Marshal(payload)
 	if err != nil {
 		return Packet{}, err
@@ -17,6 +17,23 @@ func New(payload Payload) (Packet, error) {
 		Type: payload.Type(),
 		Data: data,
 	}, nil
+}
+
+func MustPack(payload Payload) Packet {
+	packet, err := Pack(payload)
+	if err != nil {
+		panic(err)
+	}
+
+	return packet
+}
+
+func Unpack[T any](packet Packet) (T, error) {
+	var payload T
+
+	err := json.Unmarshal(packet.Data, &payload)
+
+	return payload, err
 }
 
 func Encode(packet Packet) ([]byte, error) {
@@ -29,12 +46,4 @@ func Decode(data []byte) (Packet, error) {
 	err := json.Unmarshal(data, &packet)
 
 	return packet, err
-}
-
-func DecodePayload[T any](packet Packet) (T, error) {
-	var payload T
-
-	err := json.Unmarshal(packet.Data, &payload)
-
-	return payload, err
 }

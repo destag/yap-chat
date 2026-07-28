@@ -104,12 +104,9 @@ func (m *Model) submitInput() tea.Cmd {
 		)
 	}
 
-	packet, err := protocol.New(protocol.SendMessage{
+	packet := protocol.MustPack(protocol.SendMessage{
 		Text: text,
 	})
-	if err != nil {
-		return nil
-	}
 
 	_ = m.client.Send(packet)
 
@@ -124,10 +121,7 @@ func (m *Model) quit() tea.Cmd {
 }
 
 func (m *Model) who() tea.Cmd {
-	packet, err := protocol.New(protocol.WhoRequest{})
-	if err != nil {
-		return nil
-	}
+	packet := protocol.MustPack(protocol.WhoRequest{})
 
 	_ = m.client.Send(packet)
 
@@ -169,7 +163,7 @@ func (m *Model) handlePacket(msg PacketMsg) tea.Cmd {
 	switch msg.Packet.Type {
 
 	case protocol.TypeChatMessage:
-		message, err := protocol.DecodePayload[protocol.ChatMessage](msg.Packet)
+		message, err := protocol.Unpack[protocol.ChatMessage](msg.Packet)
 		if err != nil {
 			return nil
 		}
@@ -188,7 +182,7 @@ func (m *Model) handlePacket(msg PacketMsg) tea.Cmd {
 		m.messages = append(m.messages, msg)
 
 	case protocol.TypeSystemMessage:
-		message, err := protocol.DecodePayload[protocol.SystemMessage](msg.Packet)
+		message, err := protocol.Unpack[protocol.SystemMessage](msg.Packet)
 		if err != nil {
 			return nil
 		}
@@ -206,7 +200,7 @@ func (m *Model) handlePacket(msg PacketMsg) tea.Cmd {
 		m.messages = append(m.messages, msg)
 
 	case protocol.TypeLoginResponse:
-		response, err := protocol.DecodePayload[protocol.LoginResponse](msg.Packet)
+		response, err := protocol.Unpack[protocol.LoginResponse](msg.Packet)
 		if err != nil {
 			return nil
 		}
@@ -219,7 +213,7 @@ func (m *Model) handlePacket(msg PacketMsg) tea.Cmd {
 		}
 
 	case protocol.TypeWhoResponse:
-		response, err := protocol.DecodePayload[protocol.WhoResponse](msg.Packet)
+		response, err := protocol.Unpack[protocol.WhoResponse](msg.Packet)
 		if err != nil {
 			return nil
 		}
