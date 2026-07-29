@@ -33,9 +33,17 @@ func (m Model) chatView() string {
 }
 
 func (m Model) inputView() string {
+	if m.loginFailed {
+		return ""
+	}
+
 	return m.input.View()
 }
 
 func (m Model) footerView() string {
-	return "type /help for available commands"
+	if m.loginFailed {
+		return "Press any key to exit"
+	}
+
+	return "/help for available commands"
 }

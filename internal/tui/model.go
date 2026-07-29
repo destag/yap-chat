@@ -16,6 +16,9 @@ type Model struct {
 	client *client.Client
 	server string
 
+	loggedIn    bool
+	loginFailed bool
+
 	messages []string
 	viewport viewport.Model
 
@@ -77,6 +80,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) handleKey(msg tea.KeyPressMsg) tea.Cmd {
+	if m.loginFailed {
+		return m.quit()
+	}
+
 	switch msg.String() {
 
 	case "ctrl+c":
@@ -210,7 +217,14 @@ func (m *Model) handlePacket(msg PacketMsg) tea.Cmd {
 				m.messages,
 				"* Login failed: "+response.Error,
 			)
+
+			m.refreshViewport()
+			m.loginFailed = true
+
+			return nil
 		}
+
+		m.loggedIn = true
 
 	case protocol.TypeWhoResponse:
 		response, err := protocol.Unpack[protocol.WhoResponse](msg.Packet)
