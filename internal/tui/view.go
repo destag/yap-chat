@@ -1,8 +1,12 @@
 package tui
 
 import (
+	"fmt"
+
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+
+	"github.com/destag/yap-chat/internal/protocol"
 )
 
 func (m Model) View() tea.View {
@@ -46,4 +50,21 @@ func (m Model) footerView() string {
 	}
 
 	return "/help for available commands"
+}
+
+func formatSystemMessage(msg protocol.SystemMessage) string {
+	return fmt.Sprintf(
+		"[%s] * %s",
+		msg.Timestamp.Local().Format("15:04"),
+		msg.Text,
+	)
+}
+
+func formatChatMessage(msg protocol.ChatMessage) string {
+	return fmt.Sprintf(
+		"[%s] %s: %s",
+		msg.Timestamp.Local().Format("15:04"),
+		msg.Author,
+		msg.Text,
+	)
 }

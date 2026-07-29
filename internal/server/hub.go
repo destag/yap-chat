@@ -7,6 +7,14 @@ import (
 	"github.com/destag/yap-chat/internal/protocol"
 )
 
+const (
+	// Keep the last 100 messages. Prune in batches once
+	// the history reaches 120 entries to avoid pruning
+	// on every append.
+	maxHistory          = 100
+	historyPruneTrigger = 120
+)
+
 type HubEvent struct {
 	Client *Client
 	Packet protocol.Packet
@@ -14,6 +22,7 @@ type HubEvent struct {
 
 type Hub struct {
 	clients map[*Client]bool
+	history []protocol.ChatMessage
 
 	register   chan *Client
 	unregister chan *Client
@@ -54,12 +63,15 @@ func (h *Hub) handleEvent(event HubEvent) {
 			return
 		}
 
-		packet := protocol.MustPack(protocol.ChatMessage{
+		msg := protocol.ChatMessage{
 			Author:    event.Client.username,
 			Text:      send.Text,
 			Timestamp: time.Now().UTC(),
-		})
+		}
 
+		h.addHistory(msg)
+
+		packet := protocol.MustPack(msg)
 		h.broadcast(packet)
 
 	case protocol.TypeLoginRequest:
@@ -163,6 +175,11 @@ func (h *Hub) handleLogin(event HubEvent) {
 	h.broadcastMessage(
 		fmt.Sprintf("%s joined the chat", login.Username),
 	)
+
+	packet = protocol.MustPack(protocol.HistoryResponse{
+		Messages: h.history,
+	})
+	event.Client.Send(packet)
 }
 
 func (h *Hub) usernameTaken(username string) bool {
@@ -182,4 +199,14 @@ func (h *Hub) broadcastMessage(text string) {
 	})
 
 	h.broadcast(packet)
+}
+
+func (h *Hub) addHistory(msg protocol.ChatMessage) {
+	h.history = append(h.history, msg)
+
+	if len(h.history) <= historyPruneTrigger {
+		return
+	}
+
+	h.history = h.history[len(h.history)-maxHistory:]
 }

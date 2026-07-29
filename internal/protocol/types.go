@@ -11,4 +11,6 @@ const (
 	TypeWhoResponse = "who_response"
 
 	TypeSystemMessage = "system_message"
+
+	TypeHistoryResponse = "history_response"
 )

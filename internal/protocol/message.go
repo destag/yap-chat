@@ -65,3 +65,11 @@ type WhoResponse struct {
 func (WhoResponse) Type() string {
 	return TypeWhoResponse
 }
+
+type HistoryResponse struct {
+	Messages []ChatMessage `json:"messages"`
+}
+
+func (HistoryResponse) Type() string {
+	return TypeHistoryResponse
+}

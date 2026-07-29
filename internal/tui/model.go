@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"strings"
 
 	"charm.land/bubbles/v2/textinput"
@@ -175,17 +174,7 @@ func (m *Model) handlePacket(msg PacketMsg) tea.Cmd {
 			return nil
 		}
 
-		timestamp := message.Timestamp.
-			Local().
-			Format("15:04")
-
-		msg := fmt.Sprintf(
-			"[%s] %s: %s",
-			timestamp,
-			message.Author,
-			message.Text,
-		)
-
+		msg := formatChatMessage(message)
 		m.messages = append(m.messages, msg)
 
 	case protocol.TypeSystemMessage:
@@ -194,16 +183,7 @@ func (m *Model) handlePacket(msg PacketMsg) tea.Cmd {
 			return nil
 		}
 
-		timestamp := message.Timestamp.
-			Local().
-			Format("15:04")
-
-		msg := fmt.Sprintf(
-			"[%s] * %s",
-			timestamp,
-			message.Text,
-		)
-
+		msg := formatSystemMessage(message)
 		m.messages = append(m.messages, msg)
 
 	case protocol.TypeLoginResponse:
@@ -241,6 +221,18 @@ func (m *Model) handlePacket(msg PacketMsg) tea.Cmd {
 			m.messages = append(
 				m.messages,
 				"  - "+username,
+			)
+		}
+
+	case protocol.TypeHistoryResponse:
+		history, err := protocol.Unpack[protocol.HistoryResponse](msg.Packet)
+		if err != nil {
+			return nil
+		}
+		for _, msg := range history.Messages {
+			m.messages = append(
+				m.messages,
+				formatChatMessage(msg),
 			)
 		}
 
