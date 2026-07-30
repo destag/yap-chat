@@ -70,11 +70,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 
-	m.viewport, cmd = m.viewport.Update(msg)
-	if cmd != nil {
-		cmds = append(cmds, cmd)
-	}
-
 	return m, tea.Batch(cmds...)
 }
 
@@ -87,6 +82,21 @@ func (m *Model) handleKey(msg tea.KeyPressMsg) tea.Cmd {
 
 	case "ctrl+c":
 		return m.quit()
+
+	case "ctrl+d":
+		return m.quit()
+
+	case "pgup":
+		m.viewport.PageUp()
+
+	case "pgdown":
+		m.viewport.PageDown()
+
+	case "ctrl+up":
+		m.viewport.ScrollUp(1)
+
+	case "ctrl+down":
+		m.viewport.ScrollDown(1)
 
 	case "enter":
 		return m.submitInput()
