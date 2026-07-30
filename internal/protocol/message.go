@@ -73,3 +73,9 @@ type HistoryResponse struct {
 func (HistoryResponse) Type() string {
 	return TypeHistoryResponse
 }
+
+type DisconnectRequest struct{}
+
+func (DisconnectRequest) Type() string {
+	return TypeDisconnectRequest
+}

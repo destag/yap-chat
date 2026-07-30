@@ -80,6 +80,9 @@ func (h *Hub) handleEvent(event HubEvent) {
 	case protocol.TypeWhoRequest:
 		h.handleWho(event)
 
+	case protocol.TypeDisconnectRequest:
+		h.handleDisconnect(event)
+
 	default:
 		// unknown packet
 	}
@@ -209,4 +212,8 @@ func (h *Hub) addHistory(msg protocol.ChatMessage) {
 	}
 
 	h.history = h.history[len(h.history)-maxHistory:]
+}
+
+func (h *Hub) handleDisconnect(event HubEvent) {
+	h.removeClient(event.Client)
 }

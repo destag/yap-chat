@@ -13,4 +13,6 @@ const (
 	TypeSystemMessage = "system_message"
 
 	TypeHistoryResponse = "history_response"
+
+	TypeDisconnectRequest = "disconnect_request"
 )

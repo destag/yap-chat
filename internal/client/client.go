@@ -38,6 +38,8 @@ func (c *Client) Start() {
 
 func (c *Client) Close() {
 	c.closeOnce.Do(func() {
+		packet := protocol.MustPack(protocol.DisconnectRequest{})
+		c.Send(packet)
 		close(c.done)
 		c.transport.Close()
 	})
