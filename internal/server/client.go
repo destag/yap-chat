@@ -67,7 +67,7 @@ func (c *Client) writeLoop() {
 				return
 			}
 
-			log.Printf("sending packet %+v\n", packet)
+			log.Printf("sending packet %s: %d\n", packet.Type, len(packet.Data))
 
 			err := c.transport.Write(
 				context.Background(),
@@ -93,7 +93,7 @@ func (c *Client) readLoop() {
 			return
 		}
 
-		log.Printf("receiving packet %+v\n", packet)
+		log.Printf("receiving packet %s: %d\n", packet.Type, len(packet.Data))
 
 		select {
 		case c.hub.events <- HubEvent{
