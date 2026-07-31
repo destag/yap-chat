@@ -3,12 +3,21 @@ package tui
 import (
 	"strings"
 
-	"charm.land/bubbles/v2/textinput"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/textarea"
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/destag/yap-chat/internal/client"
 	"github.com/destag/yap-chat/internal/protocol"
+)
+
+const (
+	minInputHeight = 1
+	maxInputHeight = 5
+
+	headerHeight = 2
+	footerHeight = 3
 )
 
 type Model struct {
@@ -21,15 +30,24 @@ type Model struct {
 	messages []string
 	viewport viewport.Model
 
-	input textinput.Model
+	input textarea.Model
+
+	width  int
+	height int
 }
 
 func New(client *client.Client, server string) Model {
-	input := textinput.New()
+	input := textarea.New()
 
 	input.Placeholder = "Type a message..."
 	input.Focus()
 	input.SetWidth(50)
+	input.SetHeight(minInputHeight)
+	input.ShowLineNumbers = false
+	input.DynamicHeight = true
+	input.KeyMap.InsertNewline = key.NewBinding(
+		key.WithKeys("alt+enter"),
+	)
 
 	vp := viewport.New(
 		viewport.WithWidth(80),
@@ -53,7 +71,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
-
 	case tea.KeyPressMsg:
 		cmds = append(cmds, m.handleKey(msg))
 
@@ -62,12 +79,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case PacketMsg:
 		cmds = append(cmds, m.handlePacket(msg))
-	}
-
-	var cmd tea.Cmd
-	m.input, cmd = m.input.Update(msg)
-	if cmd != nil {
-		cmds = append(cmds, cmd)
 	}
 
 	return m, tea.Batch(cmds...)
@@ -79,11 +90,7 @@ func (m *Model) handleKey(msg tea.KeyPressMsg) tea.Cmd {
 	}
 
 	switch msg.String() {
-
-	case "ctrl+c":
-		return m.quit()
-
-	case "ctrl+d":
+	case "ctrl+c", "ctrl+d":
 		return m.quit()
 
 	case "pgup":
@@ -99,10 +106,15 @@ func (m *Model) handleKey(msg tea.KeyPressMsg) tea.Cmd {
 		m.viewport.ScrollDown(1)
 
 	case "enter":
-		return m.submitInput()
+		m.submitInput()
 	}
 
-	return nil
+	var cmd tea.Cmd
+	m.input, cmd = m.input.Update(msg)
+
+	m.updateInputHeight()
+
+	return cmd
 }
 
 func (m *Model) submitInput() tea.Cmd {
@@ -253,8 +265,11 @@ func (m *Model) handlePacket(msg PacketMsg) tea.Cmd {
 }
 
 func (m *Model) handleResize(msg tea.WindowSizeMsg) tea.Cmd {
-	m.viewport.SetWidth(msg.Width)
-	m.viewport.SetHeight(msg.Height - 4)
+	m.width = msg.Width
+	m.height = msg.Height
+
+	m.updateLayout()
+
 	return nil
 }
 
@@ -264,6 +279,21 @@ func (m *Model) refreshViewport() {
 	)
 
 	m.viewport.GotoBottom()
+}
+
+func (m *Model) updateInputHeight() {
+	if m.input.Height() > maxInputHeight {
+		m.input.SetHeight(maxInputHeight)
+	}
+
+	m.updateLayout()
+}
+
+func (m *Model) updateLayout() {
+	height := m.height - headerHeight - footerHeight - m.input.Height()
+
+	m.viewport.SetHeight(height)
+	m.viewport.SetWidth(m.width)
 }
 
 func waitForPacket(ch <-chan protocol.Packet) tea.Cmd {

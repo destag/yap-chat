@@ -41,7 +41,10 @@ func (m Model) inputView() string {
 		return ""
 	}
 
-	return m.input.View()
+	return lipgloss.NewStyle().
+		PaddingTop(1).
+		PaddingBottom(1).
+		Render(m.input.View())
 }
 
 func (m Model) footerView() string {
