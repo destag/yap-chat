@@ -105,6 +105,15 @@ func (m *Model) handleKey(msg tea.KeyPressMsg) tea.Cmd {
 	case "ctrl+down":
 		m.viewport.ScrollDown(1)
 
+	case "tab":
+		value := m.input.Value()
+
+		completed := completeCommand(value)
+
+		if completed != value {
+			m.input.SetValue(completed)
+		}
+
 	case "enter":
 		m.submitInput()
 	}
@@ -152,37 +161,6 @@ func (m *Model) who() tea.Cmd {
 	packet := protocol.MustPack(protocol.WhoRequest{})
 
 	_ = m.client.Send(packet)
-
-	return nil
-}
-
-func (m *Model) handleCommand(args []string) tea.Cmd {
-	if len(args) == 0 {
-		return nil
-	}
-
-	switch args[0] {
-
-	case "who":
-		return m.who()
-
-	case "help":
-		m.messages = append(
-			m.messages,
-			"* Available commands: /help /quit /who",
-		)
-		m.refreshViewport()
-
-	case "quit":
-		return m.quit()
-
-	default:
-		m.messages = append(
-			m.messages,
-			"* Unknown command: "+args[0],
-		)
-		m.refreshViewport()
-	}
 
 	return nil
 }
