@@ -115,7 +115,7 @@ func (m *Model) handleKey(msg tea.KeyPressMsg) tea.Cmd {
 		}
 
 	case "enter":
-		m.submitInput()
+		return m.submitInput()
 	}
 
 	var cmd tea.Cmd
@@ -134,6 +134,7 @@ func (m *Model) submitInput() tea.Cmd {
 	}
 
 	m.input.Reset()
+	m.updateInputHeight()
 
 	if strings.HasPrefix(text, "/") {
 		return m.handleCommand(
