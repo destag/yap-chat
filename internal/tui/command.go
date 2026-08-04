@@ -1,15 +1,58 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+
+	"github.com/destag/yap-chat/internal/protocol"
 )
 
-var commands = []string{
-	"who",
-	"help",
-	"quit",
+type CommandFunc func(*Model, []string) tea.Cmd
+
+type Command struct {
+	Name        string
+	Description string
+	Run         CommandFunc
+}
+
+var (
+	commandList []Command
+	commands    map[string]Command
+)
+
+func init() {
+	commandList = []Command{
+		{"help", "Show this help", cmdHelp},
+		{"who", "List connected users", cmdWho},
+		{"quit", "Disconnect and exit", cmdQuit},
+	}
+	commands = make(map[string]Command, len(commandList))
+	for _, c := range commandList {
+		commands[c.Name] = c
+	}
+}
+
+func cmdHelp(m *Model, args []string) tea.Cmd {
+	m.messages = append(m.messages, "* Available commands:")
+
+	for _, info := range commandList {
+		m.messages = append(m.messages, fmt.Sprintf("  /%-5s %s", info.Name, info.Description))
+	}
+
+	m.refreshViewport()
+	return nil
+}
+
+func cmdWho(m *Model, args []string) tea.Cmd {
+	packet := protocol.MustPack(protocol.WhoRequest{})
+	m.client.Send(packet)
+	return nil
+}
+
+func cmdQuit(m *Model, args []string) tea.Cmd {
+	return m.quit()
 }
 
 func completeCommand(value string) string {
@@ -19,9 +62,9 @@ func completeCommand(value string) string {
 
 	partial := strings.TrimPrefix(value, "/")
 
-	for _, command := range commands {
-		if strings.HasPrefix(command, partial) {
-			return "/" + command
+	for _, c := range commandList {
+		if strings.HasPrefix(c.Name, partial) {
+			return "/" + c.Name
 		}
 	}
 
@@ -33,28 +76,13 @@ func (m *Model) handleCommand(args []string) tea.Cmd {
 		return nil
 	}
 
-	switch args[0] {
+	cmd, ok := commands[args[0]]
 
-	case "who":
-		return m.who()
-
-	case "help":
-		m.messages = append(
-			m.messages,
-			"* Available commands: /help /quit /who",
-		)
+	if !ok {
+		m.messages = append(m.messages, "* Unknown command: "+args[0])
 		m.refreshViewport()
-
-	case "quit":
-		return m.quit()
-
-	default:
-		m.messages = append(
-			m.messages,
-			"* Unknown command: "+args[0],
-		)
-		m.refreshViewport()
+		return nil
 	}
 
-	return nil
+	return cmd.Run(m, args[1:])
 }

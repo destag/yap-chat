@@ -158,14 +158,6 @@ func (m *Model) quit() tea.Cmd {
 	}
 }
 
-func (m *Model) who() tea.Cmd {
-	packet := protocol.MustPack(protocol.WhoRequest{})
-
-	_ = m.client.Send(packet)
-
-	return nil
-}
-
 func (m *Model) handlePacket(msg PacketMsg) tea.Cmd {
 	switch msg.Packet.Type {
 
